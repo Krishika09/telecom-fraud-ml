@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import MinMaxScaler
 import joblib
@@ -19,31 +20,54 @@ true_labels = df["true_label"]
 X = df.drop(columns=["caller_id", "true_label"])
 
 # ==========================================
-# TRAIN ISOLATION FOREST
+# TRAIN ISOLATION FOREST (NO FORCED FRAUD %)
 # ==========================================
 
 model = IsolationForest(
-    n_estimators=200,
-    contamination=0.05,
+    n_estimators=300,
+    contamination="auto",   # Do NOT assume fraud %
     random_state=42
 )
 
 model.fit(X)
 
-# Predict anomalies
-df["anomaly"] = model.predict(X)
-
-# Convert prediction (-1 = fraud)
-df["predicted_fraud"] = df["anomaly"].apply(lambda x: 1 if x == -1 else 0)
-
 # ==========================================
-# RISK SCORE GENERATION
+# GENERATE ANOMALY SCORES
 # ==========================================
 
-df["raw_score"] = model.decision_function(X)
+# Lower score = more anomalous
+df["anomaly_score"] = model.decision_function(X)
+
+# Convert to positive anomaly intensity
+df["anomaly_intensity"] = -df["anomaly_score"]
+
+# ==========================================
+# DYNAMIC THRESHOLD SELECTION
+# ==========================================
+
+# Sort callers by anomaly intensity (highest risk first)
+df_sorted = df.sort_values(by="anomaly_intensity", ascending=False)
+
+risk_percent = 0.03
+
+top_k = max(1, int(risk_percent * len(df)))
+
+threshold = df_sorted["anomaly_intensity"].iloc[top_k - 1]
+
+df["predicted_fraud"] = df["anomaly_intensity"] >= threshold
+
+print(f"Risk percentile used: {risk_percent * 100}%")
+print(f"Number of high-risk callers selected: {top_k}")
+print(f"Dynamic threshold value: {round(threshold, 5)}")
+
+
+
+# ==========================================
+# RISK SCORE NORMALIZATION (0–100)
+# ==========================================
 
 scaler = MinMaxScaler(feature_range=(0, 100))
-df["risk_score"] = scaler.fit_transform(-df[["raw_score"]])
+df["risk_score"] = scaler.fit_transform(df[["anomaly_intensity"]])
 
 # ==========================================
 # PERFORMANCE REPORT
@@ -66,10 +90,17 @@ precision = (true_positive / (true_positive + false_positive) * 100) if (true_po
 false_positive_rate = (false_positive / (false_positive + true_negative) * 100) if (false_positive + true_negative) != 0 else 0
 fraud_ratio = (total_fraud / total_callers * 100) if total_callers != 0 else 0
 
+# ==========================================
+# PRINT CLEAN REPORT
+# ==========================================
+
+print("\n======================================")
+print(" TELECOM FRAUD DETECTION REPORT ")
+print("======================================\n")
 
 print(f"Total Callers Analysed        : {total_callers}")
-print(f"Total Fraud Callers (Actual)  : {total_fraud}")
-print(f"Total Normal Callers          : {total_normal}")
+print(f"Actual Fraud Callers          : {total_fraud}")
+print(f"Actual Normal Callers         : {total_normal}")
 print(f"Fraud Ratio in Dataset        : {fraud_ratio:.2f}%\n")
 
 print(f"Fraud Callers Detected        : {detected_fraud}")
@@ -78,11 +109,11 @@ print(f"False Positives               : {false_positive}")
 print(f"False Negatives               : {false_negative}")
 print(f"True Negatives                : {true_negative}\n")
 
-print("METRICS")
+print("----------- METRICS -----------")
 print(f"Detection Rate (Recall)       : {detection_rate:.2f}%")
 print(f"Precision                     : {precision:.2f}%")
 print(f"False Positive Rate           : {false_positive_rate:.2f}%")
-
+print("======================================\n")
 
 # ==========================================
 # SAVE OUTPUTS
