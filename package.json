@@ -1,0 +1,30 @@
+{
+  "name": "telecom-fraud-ml",
+  "version": "1.0.0",
+  "description": "Telecom Fraud ML - Satark Intelligence Grid",
+  "private": true,
+  "scripts": {
+    "install:frontend": "cd web-platform && npm install",
+    "dev:frontend": "cd web-platform && npm run dev",
+    "build:frontend": "cd web-platform && npm run build",
+    "start:frontend": "cd web-platform && npm start",
+    "postinstall": "echo '⚠️  WARNING: npm install was run from root directory!' && echo 'Please run: npm run install:frontend' && echo 'Or use: .\\install.ps1 (PowerShell) or cd web-platform && npm install'"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "keywords": [
+    "telecom",
+    "fraud",
+    "machine-learning",
+    "nextjs",
+    "fastapi"
+  ],
+  "author": "",
+  "license": "MIT"
+}

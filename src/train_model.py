@@ -123,3 +123,17 @@ df.to_csv("data/fraud_predictions.csv", index=False)
 joblib.dump(model, "models/isolation_forest.pkl")
 
 print("Model training, evaluation, and saving complete.")
+
+# ===============================
+# SAVE MODEL AND SCALER
+# ===============================
+
+import os
+os.makedirs("models", exist_ok=True)
+
+joblib.dump(model, "models/fraud_detector.pkl")
+joblib.dump(scaler, "models/risk_scaler.pkl")
+
+print("\n=== MODEL SAVED ===")
+print("Model saved to: models/fraud_detector.pkl")
+print("Scaler saved to: models/risk_scaler.pkl")
