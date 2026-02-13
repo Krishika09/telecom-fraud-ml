@@ -10,8 +10,6 @@ __pycache__/
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
 
-# Generated data files
-data/*.csv
 
 # Trained ML models
 models/*.pkl
