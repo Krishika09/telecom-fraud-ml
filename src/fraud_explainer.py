@@ -1,54 +1,64 @@
 import pandas as pd
+import numpy as np
 
+# ==========================================
+# LOAD FRAUD PREDICTIONS
+# ==========================================
 
 df = pd.read_csv("data/fraud_predictions.csv")
 
-# Filter only detected fraud callers
+# Separate detected fraud callers
 fraud_df = df[df["predicted_fraud"] == 1].copy()
 
+# ==========================================
+# COMPUTE POPULATION STATISTICS
+# ==========================================
 
-def generate_explanation(row):
-
-    reasons = []
-
-    if row["total_calls"] > 2000:
-        reasons.append("Extremely high call volume")
-
-    elif row["total_calls"] > 1000:
-        reasons.append("High call frequency")
-
-    if row["avg_call_duration"] < 40:
-        reasons.append("Very short average call duration")
-
-    if row["night_call_ratio"] > 0.4:
-        reasons.append("High night activity")
-
-    if row["unique_target_regions"] > 3:
-        reasons.append("Multi-region targeting")
-
-    if row["risk_score"] > 80:
-        reasons.append("Very high anomaly risk score")
-
-    if not reasons:
-        reasons.append("Anomalous behavioural deviation")
-
-    return " | ".join(reasons)
-
-
-# Apply explanation
-fraud_df["explanation"] = fraud_df.apply(generate_explanation, axis=1)
-
-report_columns = [
-    "caller_id",
-    "risk_score",
+metrics = [
     "total_calls",
     "avg_call_duration",
     "night_call_ratio",
-    "unique_target_regions",
-    "explanation"
+    "unique_target_regions"
 ]
 
-fraud_df[report_columns].to_csv(
+population_mean = df[metrics].mean()
+population_std = df[metrics].std()
+
+# ==========================================
+# EXPLANATION ENGINE
+# ==========================================
+
+def generate_statistical_explanation(row):
+
+    reasons = []
+
+    for metric in metrics:
+
+        if population_std[metric] == 0:
+            continue
+
+        z_score = (row[metric] - population_mean[metric]) / population_std[metric]
+
+        if abs(z_score) > 2:  # Strong deviation
+            direction = "higher" if z_score > 0 else "lower"
+            reasons.append(
+                f"{metric.replace('_',' ').title()} significantly {direction} than average "
+                f"(z-score = {z_score:.2f})"
+            )
+
+    if not reasons:
+        reasons.append("Detected as multivariate anomaly by Isolation Forest")
+
+    return " | ".join(reasons)
+
+# Apply explanation
+fraud_df["explanation"] = fraud_df.apply(generate_statistical_explanation, axis=1)
+
+# ==========================================
+# SAVE FULL FRAUD REPORT
+# ==========================================
+
+fraud_df.to_csv(
     "data/fraud_explanation_report.csv",
     index=False
 )
