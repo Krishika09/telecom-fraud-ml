@@ -75,3 +75,17 @@ print("\n=== PERFORMANCE METRICS ===")
 print(f"Detection Rate (Recall): {detection_rate:.2f}%")
 print(f"Precision: {precision:.2f}%")
 print(f"False Positive Rate: {false_positive_rate:.2f}%")
+
+# ===============================
+# SAVE MODEL AND SCALER
+# ===============================
+
+import os
+os.makedirs("models", exist_ok=True)
+
+joblib.dump(model, "models/fraud_detector.pkl")
+joblib.dump(scaler, "models/risk_scaler.pkl")
+
+print("\n=== MODEL SAVED ===")
+print("Model saved to: models/fraud_detector.pkl")
+print("Scaler saved to: models/risk_scaler.pkl")
