@@ -7,14 +7,19 @@ from datetime import datetime, timedelta
 # CONFIGURATION (SCALED)
 # ==========================================
 
-TOTAL_CALLERS = 20000
-FRAUD_RATIO = 0.02
-DAYS_OF_SIMULATION = 7
+TOTAL_CALLERS = random.randint(10000, 40000)
+FRAUD_RATIO = random.uniform(0.015, 0.035)
+DAYS_OF_SIMULATION = random.randint(1, 30)
 
 REGIONS = ["Delhi", "Mumbai", "Kolkata", "Chennai", "Bangalore", "Hyderabad"]
+REGIONS = random.sample(REGIONS, random.randint(3, 6))
 
-random.seed(42)
-np.random.seed(42)
+# ==========================================
+# FRAUD CHARACTERISTICS (VARIABLE PER DATASET)
+# ==========================================
+
+fraud_volume_multiplier = random.uniform(0.8, 1.3)
+fraud_night_bias = random.uniform(0.2, 0.6)
 
 # ==========================================
 # CREATE CALLER POPULATION
@@ -76,12 +81,15 @@ for caller in fraud_callers:
 
     for day in range(DAYS_OF_SIMULATION):
 
-        calls_today = random.randint(6, 35)
+        # Use fraud_volume_multiplier to vary call volume
+        base_calls = random.randint(6, 35)
+        calls_today = max(1, int(base_calls * fraud_volume_multiplier))
 
 
         for _ in range(calls_today):
 
-            if random.random() < 0.35:
+            # Use fraud_night_bias to vary night call probability
+            if random.random() < fraud_night_bias:
                 hour = random.choice([22, 23, 0, 1, 2, 3, 4, 5])
             else:
                 hour = random.randint(9, 21)
@@ -125,6 +133,9 @@ columns = [
 ]
 
 df = pd.DataFrame(call_records, columns=columns)
+
+# (Noise injection removed - moved to train_model.py)
+# ==========================================
 
 df.to_csv("data/call_data.csv", index=False)
 
